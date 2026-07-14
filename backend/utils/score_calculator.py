@@ -2,32 +2,60 @@ def calculate_score(ssl_result, dns_result, whois_result, headers_result):
 
     score = 0
 
-    # SSL
+    # --------------------------
+    # HTTPS & SSL (50 Points)
+    # --------------------------
+
     if ssl_result.get("status") == "Valid":
-        score += 25
+        score += 30
 
-    # DNS
+        # Bonus if certificate is valid for more than 30 days
+        if ssl_result.get("days_left", 0) > 30:
+            score += 10
+
+    # --------------------------
+    # DNS (15 Points)
+    # --------------------------
+
     if dns_result.get("A"):
-        score += 20
+        score += 10
 
-    # WHOIS
+    if dns_result.get("MX"):
+        score += 3
+
+    if dns_result.get("NS"):
+        score += 2
+
+    # --------------------------
+    # WHOIS (10 Points)
+    # --------------------------
+
     if whois_result.get("registrar"):
-        score += 15
+        score += 5
 
-    # Security Headers
-    security_headers = [
-        "Strict-Transport-Security",
-        "Content-Security-Policy",
-        "X-Frame-Options",
-        "X-Content-Type-Options",
-        "Referrer-Policy",
-        "Permissions-Policy",
-    ]
+    if whois_result.get("domain"):
+        score += 5
 
-    header_score = 40 / len(security_headers)
+    # --------------------------
+    # Security Headers (25 Points)
+    # --------------------------
 
-    for header in security_headers:
-        if headers_result.get(header) != "Missing":
-            score += header_score
+    header_points = {
+        "Strict-Transport-Security": 8,
+        "Content-Security-Policy": 6,
+        "X-Frame-Options": 4,
+        "X-Content-Type-Options": 3,
+        "Referrer-Policy": 2,
+        "Permissions-Policy": 2,
+    }
 
-    return round(score)
+    for header, points in header_points.items():
+        value = headers_result.get(header)
+
+        if value and value != "Missing":
+            score += points
+
+    # Ensure score stays within 0-100
+    score = max(0, min(100, round(score)))
+
+    return score

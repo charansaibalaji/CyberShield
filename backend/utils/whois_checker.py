@@ -1,5 +1,6 @@
 import whois
 from urllib.parse import urlparse
+from datetime import datetime
 
 
 def whois_lookup(url):
@@ -13,11 +14,28 @@ def whois_lookup(url):
 
         data = whois.whois(hostname)
 
+        creation = data.creation_date
+        expiration = data.expiration_date
+
+        # Sometimes WHOIS returns a list
+        if isinstance(creation, list):
+            creation = creation[0]
+
+        if isinstance(expiration, list):
+            expiration = expiration[0]
+
+        # Convert datetime to YYYY-MM-DD
+        if isinstance(creation, datetime):
+            creation = creation.strftime("%Y-%m-%d")
+
+        if isinstance(expiration, datetime):
+            expiration = expiration.strftime("%Y-%m-%d")
+
         return {
             "domain": data.domain_name,
             "registrar": data.registrar,
-            "creation_date": str(data.creation_date),
-            "expiration_date": str(data.expiration_date),
+            "creation_date": creation,
+            "expiration_date": expiration,
             "name_servers": data.name_servers,
         }
 
